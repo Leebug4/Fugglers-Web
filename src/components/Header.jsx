@@ -5,29 +5,19 @@ import { supabase } from "../lib/supabase";
 export default function Header() {
   const [logo, setLogo] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchLogo();
     checkLogin();
-
     window.addEventListener("authChange", checkLogin);
-
-    return () => {
-      window.removeEventListener("authChange", checkLogin);
-    };
+    return () => window.removeEventListener("authChange", checkLogin);
   }, []);
 
   const checkLogin = () => {
     const user = localStorage.getItem("user");
     const role = localStorage.getItem("role");
-
-    if (user !== null || role === "admin") {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
+    setIsLoggedIn(user !== null || role === "admin");
   };
 
   const fetchLogo = async () => {
@@ -37,18 +27,14 @@ export default function Header() {
       .order("id", { ascending: false })
       .limit(1)
       .single();
-
     if (!error) setLogo(data.logo_image);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
-
     setIsLoggedIn(false);
-
     window.dispatchEvent(new Event("authChange"));
-
     alert("Logged out successfully");
     navigate("/login");
   };
@@ -56,55 +42,57 @@ export default function Header() {
   const isAdmin = localStorage.getItem("role") === "admin";
 
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 1000,
-        background: "white",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "15px 20px",
-        borderBottom: "1px solid #ddd",
-      }}
-    >
-      {/* LOGO */}
-      <div>
-        <Link to="/">
-          {logo && (
-            <img src={logo} alt="Logo" style={{ height: "60px" }} />
-          )}
-        </Link>
-      </div>
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-between items-center px-5 py-3 shadow-sm">
+      {/* Logo */}
+      <Link to="/">
+        {logo && <img src={logo} alt="Logo" className="h-12 object-contain" />}
+      </Link>
 
-      {/* NAV */}
-      <nav style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-
-        {/* 👇 BUYER NAV ONLY (HIDDEN IF ADMIN) */}
+      {/* Navigation */}
+      <nav className="flex items-center gap-4 flex-wrap">
         {!isAdmin && (
           <>
-            <Link to="/">Home</Link>
-
-            <Link to="/products?category=Plushie Fugglers">Plushie</Link>
-            <Link to="/products?category=Classic Keychain Fuggler">Classic</Link>
-            <Link to="/products?category=Rainbow Keychain Fuggler">Rainbow</Link>
-            <Link to="/products?category=Mini-baby Fugglers">Mini</Link>
-
-            <Link to="/orders">My Orders</Link>
-
-            {/* CART BUTTON */}
-            <button onClick={() => navigate("/cart")}>
+            <Link to="/" className="text-gray-700 hover:text-red-600 transition">
+              Home
+            </Link>
+            <Link to="/products?category=Plushie Fugglers" className="text-gray-700 hover:text-red-600 transition">
+              Plushie
+            </Link>
+            <Link to="/products?category=Classic Keychain Fuggler" className="text-gray-700 hover:text-red-600 transition">
+              Classic
+            </Link>
+            <Link to="/products?category=Rainbow Keychain Fuggler" className="text-gray-700 hover:text-red-600 transition">
+              Rainbow
+            </Link>
+            <Link to="/products?category=Mini-baby Fugglers" className="text-gray-700 hover:text-red-600 transition">
+              Mini
+            </Link>
+            <Link to="/orders" className="text-gray-700 hover:text-red-600 transition">
+              My Orders
+            </Link>
+            <button
+              onClick={() => navigate("/cart")}
+              className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition"
+            >
               Cart
             </button>
           </>
         )}
 
-        {/* LOGIN / LOGOUT */}
         {isLoggedIn ? (
-          <button onClick={handleLogout}>Logout</button>
+          <button
+            onClick={handleLogout}
+            className="bg-gray-800 text-white px-4 py-1 rounded-md hover:bg-gray-900 transition"
+          >
+            Logout
+          </button>
         ) : (
-          <button onClick={() => navigate("/login")}>Login</button>
+          <button
+            onClick={() => navigate("/login")}
+            className="bg-black text-white px-4 py-1 rounded-md hover:bg-gray-800 transition"
+          >
+            Login
+          </button>
         )}
       </nav>
     </header>

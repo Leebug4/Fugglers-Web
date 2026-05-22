@@ -3,7 +3,6 @@ import { supabase } from "../lib/supabase";
 
 function Admin() {
   const [orders, setOrders] = useState([]);
-
   const [summary, setSummary] = useState({
     totalSales: 0,
     totalOrders: 0,
@@ -12,7 +11,6 @@ function Admin() {
     delivered: 0,
     received: 0,
   });
-
   const [topProducts, setTopProducts] = useState([]);
 
   useEffect(() => {
@@ -25,40 +23,29 @@ function Admin() {
     await fetchTopProducts();
   };
 
-  // 📦 ORDERS
   const fetchOrders = async () => {
     const { data } = await supabase
       .from("orders")
       .select("*")
       .order("create_at", { ascending: false });
-
     const enriched = await Promise.all(
       (data || []).map(async (order) => {
         const { data: items } = await supabase
           .from("order_items")
           .select("*, products(*)")
           .eq("order_id", order.id);
-
         return { ...order, items: items || [] };
       })
     );
-
     setOrders(enriched);
   };
 
-  // 💰 SUMMARY (REMOVED on_the_way)
   const fetchSummary = async () => {
-    const { data } = await supabase
-      .from("orders")
-      .select("total_price, status");
-
+    const { data } = await supabase.from("orders").select("total_price, status");
     const totalSales = (data || [])
-      .filter(o => o.status === "received")
+      .filter((o) => o.status === "received")
       .reduce((sum, o) => sum + Number(o.total_price), 0);
-
-    const count = (status) =>
-      (data || []).filter(o => o.status === status).length;
-
+    const count = (status) => (data || []).filter((o) => o.status === status).length;
     setSummary({
       totalSales,
       totalOrders: data?.length || 0,
@@ -69,64 +56,42 @@ function Admin() {
     });
   };
 
-  // 📊 TOP PRODUCTS
   const fetchTopProducts = async () => {
-    const { data } = await supabase
-      .from("order_items")
-      .select("product_id, quantity, products(*)");
-
+    const { data } = await supabase.from("order_items").select("product_id, quantity, products(*)");
     const map = {};
-
     (data || []).forEach((item) => {
       const id = item.product_id;
-
       if (!map[id]) {
-        map[id] = {
-          name: item.products?.name,
-          image: item.products?.image,
-          sold: 0,
-        };
+        map[id] = { name: item.products?.name, image: item.products?.image, sold: 0 };
       }
-
       map[id].sold += item.quantity;
     });
-
     setTopProducts(Object.values(map));
   };
 
-  // 🔄 UPDATE STATUS
   const updateStatus = async (id, status) => {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status })
-      .eq("id", id);
-
-    if (error) {
-      console.log("UPDATE ERROR:", error);
-      return;
-    }
-
+    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    if (error) return console.log("UPDATE ERROR:", error);
     fetchAll();
   };
 
+  const Box = ({ title, value }) => (
+    <div className="border border-gray-300 p-4 rounded-lg bg-white shadow-sm">
+      <h4 className="font-semibold text-gray-600">{title}</h4>
+      <h2 className="text-2xl font-bold text-red-700">{value || 0}</h2>
+    </div>
+  );
+
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>Admin Dashboard</h1>
+    <div className="p-5 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
       <button
-        onClick={() => window.location.href = "/sales-summary"}
-        style={{
-          marginTop: 30,
-          padding: "10px 15px",
-          background: "black",
-          color: "white",
-          border: "none",
-          cursor: "pointer"
-        }}
+        onClick={() => (window.location.href = "/sales-summary")}
+        className="mb-6 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
       >
         📊 View Sales Summary
       </button>
-      {/* 📊 SUMMARY */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="flex flex-wrap gap-4 mb-8">
         <Box title="Total Sales" value={`₱${summary.totalSales}`} />
         <Box title="Orders" value={summary.totalOrders} />
         <Box title="Pending" value={summary.pending} />
@@ -134,59 +99,36 @@ function Admin() {
         <Box title="Delivered" value={summary.delivered} />
         <Box title="Received" value={summary.received} />
       </div>
-
-      {/* 🔥 TOP PRODUCTS */}
-      <h2 style={{ marginTop: 30 }}>🔥 Top Products</h2>
-
-      <div style={{ display: "flex", gap: 10 }}>
+      <h2 className="text-2xl font-bold mt-8 mb-4">🔥 Top Products</h2>
+      <div className="flex flex-wrap gap-4 mb-8">
         {topProducts.map((p, i) => (
-          <div key={i} style={card}>
-            <img src={p.image} width={60} />
-            <p>{p.name}</p>
-            <b>Sold: {p.sold}</b>
+          <div key={i} className="border border-gray-200 p-3 rounded-lg w-40 bg-white">
+            <img src={p.image} alt={p.name} className="w-full h-24 object-contain mb-2" />
+            <p className="font-medium text-sm">{p.name}</p>
+            <b className="text-red-600">Sold: {p.sold}</b>
           </div>
         ))}
       </div>
-
-      {/* 📦 ORDERS */}
-      <h2 style={{ marginTop: 30 }}>Orders</h2>
-
+      <h2 className="text-2xl font-bold mt-6 mb-4">Orders</h2>
       {orders.map((order) => (
-        <div key={order.id} style={orderCard}>
-          <h3>Order #{order.id}</h3>
-
+        <div key={order.id} className="border border-gray-300 p-5 rounded-lg mb-6 bg-white shadow-sm">
+          <h3 className="text-xl font-semibold">Order #{order.id}</h3>
           <p>Total: ₱{order.total_price}</p>
-
-          <p>
-            Status: <b>{order.status}</b>
-          </p>
-
+          <p>Status: <b className="capitalize">{order.status}</b></p>
           <p>Address: {order.address}</p>
-
-          {/* ITEMS */}
-          {order.items.map((item) => (
-            <div key={item.id} style={{ display: "flex", gap: 10 }}>
-              <img src={item.products.image} width={40} />
-              <div>
-                {item.products.name} (x{item.quantity})
+          <div className="mt-3 space-y-2">
+            {order.items.map((item) => (
+              <div key={item.id} className="flex gap-3 items-center">
+                <img src={item.products.image} className="w-10 h-10 object-cover rounded" />
+                <span>{item.products.name} (x{item.quantity})</span>
               </div>
-            </div>
-          ))}
-
-          {/* ACTIONS */}
+            ))}
+          </div>
           {order.status !== "received" && (
-            <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-              <button onClick={() => updateStatus(order.id, "pending")}>
-                Pending
-              </button>
-
-              <button onClick={() => updateStatus(order.id, "shipped")}>
-                Shipped
-              </button>
-
-              <button onClick={() => updateStatus(order.id, "delivered")}>
-                Delivered
-              </button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => updateStatus(order.id, "pending")} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">Pending</button>
+              <button onClick={() => updateStatus(order.id, "shipped")} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Shipped</button>
+              <button onClick={() => updateStatus(order.id, "delivered")} className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Delivered</button>
             </div>
           )}
         </div>
@@ -194,24 +136,5 @@ function Admin() {
     </div>
   );
 }
-
-// UI
-const Box = ({ title, value }) => (
-  <div style={{ border: "1px solid #ddd", padding: 10 }}>
-    <h4>{title}</h4>
-    <h2>{value || 0}</h2>
-  </div>
-);
-
-const card = {
-  border: "1px solid #ddd",
-  padding: 10,
-};
-
-const orderCard = {
-  border: "1px solid #ccc",
-  padding: 15,
-  marginTop: 10,
-};
 
 export default Admin;
